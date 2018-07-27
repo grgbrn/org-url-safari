@@ -14,11 +14,14 @@ MISSING_VALUE = "(missing value)"
 
 def invoke_applescript():
     "Yields tuples (window_number, title, url) from external applescript"
-    # XXX applescript is in same directory, pass 'cwd' to subprocess call?
+
+    # applescript is in the same directory as the python script, must set
+    # the working directory to be able to invoke this script from a symlink
+    script_path = os.path.dirname(os.path.realpath(__file__))
 
     # the "dwim" args to subprocess.run apparently require py3.7 :/
     out = subprocess.run(["osascript", "-so", "urlsafari.applescript"],
-        capture_output=True, text=True)
+        capture_output=True, text=True, cwd=script_path)
     # print(out)
 
     out.check_returncode() # throw exception if subprocess fails
