@@ -32,8 +32,6 @@ def invoke_applescript():
 def get_structured_tabs(lines, filter_missing=False):
     "Make a dict with int(window_number) -> List(tuple(title, url))"
 
-    # XXX filter_missing should filter windows that have only missing values?
-
     def window_number(x):
         return int(x[0])
 
@@ -43,6 +41,17 @@ def get_structured_tabs(lines, filter_missing=False):
     data = sorted(lines, key=window_number)
     for k,g in itertools.groupby(data, window_number):
         out[k] = list(t[1:] for t in g)
+
+    if not filter_missing:
+        return out
+
+    # find key of windows that are entirely tabs with MISSING_VALUE urls
+    to_remove = [win_num for (win_num, tabvals) in out.items()
+                 if all(t[1] == MISSING_VALUE for t in tabvals)]
+
+    # dict removals must occur outside iteration
+    for k in to_remove:
+        del out[k]
 
     return out
 
@@ -68,14 +77,14 @@ def org_dump(tab_data, f):
 
     for k,v in tab_data.items():
         writeline(f"* Window #{k}")
-        for (title, url) in v:
+        for title, url in v:
             writeline(f"** {title}")
             writeline(f"{url}")
             writeline()
 
 def main():
     lines = invoke_applescript()
-    tabdata = get_structured_tabs(lines)
+    tabdata = get_structured_tabs(lines, filter_missing=True)
     # pprint(tabdata)
     org_dump(tabdata, sys.stdout)
 
